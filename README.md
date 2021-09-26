@@ -1,2 +1,3 @@
 # nodes
-resources viewd as graph nodes
+
+resources viewed as graph nodes
