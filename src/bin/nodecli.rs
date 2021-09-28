@@ -1,4 +1,11 @@
 fn main() {
-    let n: nodes::Node = Default::default();
-    println!("n {:?}", n);
+    let mut id = 0;
+
+    id += 1;
+    let s = nodes::Node::new_string(id, "aaa");
+
+    id += 1;
+    let e = nodes::Node::new_edges(id, vec![s]);
+
+    println!("e {:?}", e);
 }
