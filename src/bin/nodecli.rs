@@ -7,5 +7,6 @@ fn main() {
     id += 1;
     let e = nodes::Node::new_edges(id, vec![s]);
 
-    println!("e {:?}", e);
+    let n = nodes::traverse(&e);
+    println!("{:?}", n);
 }

@@ -1,5 +1,13 @@
 //! nodes: a graph based data organization
 //!
+//! 
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum NodeError {
+    #[error("unknown node error")]
+    Unknown,
+}
 
 /// Node is the connecting piece of the organization
 #[derive(Debug)]
@@ -38,6 +46,15 @@ impl Node {
             id,
             tags: Vec::new(),
             content: Content::String(s.to_owned()),
+        }
+    }
+}
+
+pub fn traverse(node: &Node) {
+    println!("{:?}", node);
+    if let Content::Edges(edges) = &node.content {
+        for edge in edges {
+            traverse(edge);
         }
     }
 }
