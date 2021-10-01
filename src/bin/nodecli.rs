@@ -1,12 +1,29 @@
-fn main() {
-    let mut id = 0;
+use anyhow::Error;
+use nodes::node::{Content, Node};
+use nodes::repo::{traverse, HashMapRepo, NodeRepo};
+
+fn main() -> Result<(), Error> {
+    let mut repo = HashMapRepo::new();
+
+    let root_id = repo.root();
+    let mut id = root_id.into();
+
+    let mut root = Node::new(id, None);
+    repo.put(&root)?;
 
     id += 1;
-    let s = nodes::Node::new_string(id, "aaa");
+    let s = Node::new(id, Some(Content::String("aaa".to_string())));
+    repo.put(&s)?;
 
     id += 1;
-    let e = nodes::Node::new_edges(id, vec![s]);
+    let mut e = Node::new(id, None);
+    e.edges = vec![s.id];
+    repo.put(&e)?;
 
-    let n = nodes::traverse(&e);
-    println!("{:?}", n);
+    root.edges.push(e.id);
+    repo.put(&root)?;
+
+    traverse(&repo, &root_id)?;
+
+    Ok(())
 }
