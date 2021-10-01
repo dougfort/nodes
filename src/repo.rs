@@ -20,7 +20,19 @@ pub trait NodeRepo {
     /// put stores the Node in the repository
     /// if there is already a node stored for the id, it iis overwritten
     fn put(&mut self, node: &node::Node) -> Result<(), NodeRepoError>;
-}
+
+    /// traverse visits every node with a depth first search DFS
+    fn traverse(&self, id: &node::NodeId) -> Result<(), NodeRepoError> {
+        if let Some(n) = self.get(id)? {
+            println!("{:?}", n);
+            for edge in &n.edges {
+                self.traverse(edge)?;
+            }
+        }
+    
+        Ok(())
+    }
+    }
 
 pub struct HashMapRepo {
     root: node::NodeId,
@@ -64,15 +76,4 @@ impl NodeRepo for HashMapRepo {
         self.repo.insert(key, value);
         Ok(())
     }
-}
-
-pub fn traverse(repo: &dyn NodeRepo, id: &node::NodeId) -> Result<(), NodeRepoError> {
-    if let Some(n) = repo.get(id)? {
-        println!("{:?}", n);
-        for edge in &n.edges {
-            traverse(repo, edge)?;
-        }
-    }
-
-    Ok(())
 }

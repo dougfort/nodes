@@ -1,6 +1,6 @@
 use anyhow::Error;
 use nodes::node::{Content, Node};
-use nodes::repo::{traverse, HashMapRepo, NodeRepo};
+use nodes::repo::{HashMapRepo, NodeRepo};
 
 fn main() -> Result<(), Error> {
     let mut repo = HashMapRepo::new();
@@ -23,7 +23,7 @@ fn main() -> Result<(), Error> {
     root.edges.push(e.id);
     repo.put(&root)?;
 
-    traverse(&repo, &root_id)?;
+    repo.traverse(&root_id)?;
 
     Ok(())
 }
