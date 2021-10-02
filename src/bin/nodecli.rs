@@ -23,7 +23,5 @@ fn main() -> Result<(), Error> {
     root.edges.push(e.id);
     repo.put(&root)?;
 
-    repo.traverse(&root_id)?;
-
     Ok(())
 }
