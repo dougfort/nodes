@@ -13,6 +13,7 @@ pub enum NodeError {
 /// Node is the connecting piece of the organization
 #[derive(Debug, Clone)]
 pub enum Content {
+    Edges(Vec<NodeId>),
     String(String),
     Path(String),
 }
@@ -35,31 +36,26 @@ impl From<usize> for NodeId {
 #[derive(Debug, Clone)]
 pub struct Node {
     pub id: NodeId,
-    pub edges: Vec<NodeId>,
     pub tags: HashSet<String>,
-    pub content: Option<Content>,
+    pub content: Content,
 }
 
 impl Node {
-    pub fn new(id: usize, content: Option<Content>) -> Self {
+    pub fn new(id: usize, content: Content) -> Self {
         Node {
             id: NodeId(id),
-            edges: Vec::new(),
             tags: HashSet::new(),
             content,
         }
     }
-
-    pub fn add_edge(&mut self) {}
 }
 
 impl Default for Node {
     fn default() -> Self {
         Self {
             id: NodeId(0),
-            edges: Vec::new(),
             tags: HashSet::new(),
-            content: None,
+            content: Content::Edges(vec![]),
         }
     }
 }
@@ -71,6 +67,9 @@ mod tests {
     #[test]
     fn default_is_empty() {
         let x: Node = Default::default();
-        assert!(x.content.is_none())
+        match x.content {
+            Content::Edges(edges) => assert!(edges.is_empty()),
+            _ => panic!("invalid content"),
+        };
     }
 }

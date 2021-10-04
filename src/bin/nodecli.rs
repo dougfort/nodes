@@ -8,19 +8,15 @@ fn main() -> Result<(), Error> {
     let root_id = repo.root();
     let mut id = root_id.into();
 
-    let mut root = Node::new(id, None);
-    repo.put(&root)?;
-
     id += 1;
-    let s = Node::new(id, Some(Content::String("aaa".to_string())));
+    let s = Node::new(id, Content::String("aaa".to_string()));
     repo.put(&s)?;
 
     id += 1;
-    let mut e = Node::new(id, None);
-    e.edges = vec![s.id];
+    let e = Node::new(id, Content::Edges(vec![s.id]));
     repo.put(&e)?;
 
-    root.edges.push(e.id);
+    let root = Node::new(root_id.into(), Content::Edges(vec![e.id]));
     repo.put(&root)?;
 
     Ok(())
