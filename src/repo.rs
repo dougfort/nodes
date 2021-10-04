@@ -38,13 +38,13 @@ pub trait NodeRepo {
         while !stack.is_empty() {
             let id = stack.pop().unwrap();
             if let Some(n) = self.get(&id)? {
-                if filter(n.tags) {
-                    if let Some(c) = n.content {
-                        content.push(c);
+                match n.content {
+                    node::Content::Edges(e) => stack.extend_from_slice(&e),
+                    _ => {
+                        if filter(n.tags) {
+                            content.push(n.content);
+                        }
                     }
-                }
-                for edge in n.edges {
-                    stack.push(edge);
                 }
             } else {
                 return Err(NodeRepoError::UnknownNodeId(id));
@@ -123,7 +123,7 @@ mod tests {
         let root_id = repo.root();
         let id = root_id.into();
 
-        let root = node::Node::new(id, None);
+        let root = node::Node::new(id, node::Content::Edges(vec![]));
         repo.put(&root).unwrap();
 
         let x = repo.get(&root_id).unwrap();
@@ -137,21 +137,17 @@ mod tests {
         let root_id = repo.root();
         let mut id = root_id.into();
 
-        let mut root = node::Node::new(id, None);
-        repo.put(&root).unwrap();
-
         id += 1;
         let test_slice = "aaa";
         let test_string = test_slice.to_string();
-        let s = node::Node::new(id, Some(node::Content::String(test_string)));
+        let s = node::Node::new(id, node::Content::String(test_string));
         repo.put(&s).unwrap();
 
         id += 1;
-        let mut e = node::Node::new(id, None);
-        e.edges = vec![s.id];
+        let e = node::Node::new(id, node::Content::Edges(vec![s.id]));
         repo.put(&e).unwrap();
 
-        root.edges.push(e.id);
+        let root = node::Node::new(root_id.into(), node::Content::Edges(vec![e.id]));
         repo.put(&root).unwrap();
 
         let res = repo.traverse(create_accept_all_filter()).unwrap();
@@ -170,15 +166,12 @@ mod tests {
         let root_id = repo.root();
         let mut id = root_id.into();
 
-        let mut root = node::Node::new(id, None);
-        repo.put(&root).unwrap();
-
         id += 1;
         let test_slice1 = "aaa";
         let test_string1 = test_slice1.to_string();
         let test_tag_slice1 = "tag1";
         let test_tag1 = test_tag_slice1.to_string();
-        let mut s1 = node::Node::new(id, Some(node::Content::String(test_string1)));
+        let mut s1 = node::Node::new(id, node::Content::String(test_string1));
         s1.tags.insert(test_tag1);
         repo.put(&s1).unwrap();
 
@@ -187,16 +180,15 @@ mod tests {
         let test_string2 = test_slice2.to_string();
         let test_tag_slice2 = "tag2";
         let test_tag2 = test_tag_slice2.to_string();
-        let mut s2 = node::Node::new(id, Some(node::Content::String(test_string2)));
+        let mut s2 = node::Node::new(id, node::Content::String(test_string2));
         s2.tags.insert(test_tag2);
         repo.put(&s2).unwrap();
 
         id += 1;
-        let mut e = node::Node::new(id, None);
-        e.edges = vec![s1.id, s2.id];
+        let e = node::Node::new(id, node::Content::Edges(vec![s1.id, s2.id]));
         repo.put(&e).unwrap();
 
-        root.edges.push(e.id);
+        let root = node::Node::new(root_id.into(), node::Content::Edges(vec![e.id]));
         repo.put(&root).unwrap();
 
         let res = repo
