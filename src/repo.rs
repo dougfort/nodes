@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
 use crate::node;
@@ -25,9 +25,11 @@ pub trait NodeRepo {
     fn put(&mut self, node: &node::Node) -> Result<(), NodeRepoError>;
 
     /// traverse visits every node with a breadth first search BFS
+    /// it takes a filter function that is passed the tags and can return true
+    /// or false to accept or ignore the node.
     fn traverse<F>(&self, filter: F) -> Result<Vec<node::Content>, NodeRepoError>
     where
-        F: Fn(Vec<String>) -> bool,
+        F: Fn(HashSet<String>) -> bool,
     {
         let mut content: Vec<node::Content> = Vec::new();
 
@@ -51,6 +53,19 @@ pub trait NodeRepo {
 
         Ok(content)
     }
+}
+
+/// create_match_tag_filter returns a closure for use as a filter in traverse
+/// the closure will return true for a node if 'tag' matches any of its tags
+pub fn create_match_tag_filter(tag: &str) -> impl Fn(HashSet<String>) -> bool {
+    let t = tag.to_owned();
+    move |tags| tags.get(&t).is_some()
+}
+
+/// create_accept_all_filter returns a closure for use as a filter in traverse
+/// the closure will return true for any set of tags including the empty set
+pub fn create_accept_all_filter() -> impl Fn(HashSet<String>) -> bool {
+    move |_| true
 }
 
 pub struct HashMapRepo {
@@ -139,11 +154,58 @@ mod tests {
         root.edges.push(e.id);
         repo.put(&root).unwrap();
 
-        let res = repo.traverse(|_| true).unwrap();
+        let res = repo.traverse(create_accept_all_filter()).unwrap();
         assert_eq!(res.len(), 1);
 
         match &res[0] {
             node::Content::String(res_string) => assert_eq!(res_string, test_slice),
+            _ => panic!("invalid content"),
+        };
+    }
+
+    #[test]
+    fn hash_map_repo_can_find_a_tag() {
+        let mut repo = HashMapRepo::new();
+
+        let root_id = repo.root();
+        let mut id = root_id.into();
+
+        let mut root = node::Node::new(id, None);
+        repo.put(&root).unwrap();
+
+        id += 1;
+        let test_slice1 = "aaa";
+        let test_string1 = test_slice1.to_string();
+        let test_tag_slice1 = "tag1";
+        let test_tag1 = test_tag_slice1.to_string();
+        let mut s1 = node::Node::new(id, Some(node::Content::String(test_string1)));
+        s1.tags.insert(test_tag1);
+        repo.put(&s1).unwrap();
+
+        id += 1;
+        let test_slice2 = "bbb";
+        let test_string2 = test_slice2.to_string();
+        let test_tag_slice2 = "tag2";
+        let test_tag2 = test_tag_slice2.to_string();
+        let mut s2 = node::Node::new(id, Some(node::Content::String(test_string2)));
+        s2.tags.insert(test_tag2);
+        repo.put(&s2).unwrap();
+
+        id += 1;
+        let mut e = node::Node::new(id, None);
+        e.edges = vec![s1.id, s2.id];
+        repo.put(&e).unwrap();
+
+        root.edges.push(e.id);
+        repo.put(&root).unwrap();
+
+        let res = repo
+            .traverse(create_match_tag_filter(test_tag_slice2))
+            .unwrap();
+        assert_eq!(res.len(), 1);
+
+        match &res[0] {
+            node::Content::String(res_string) => assert_eq!(res_string, test_slice2),
             _ => panic!("invalid content"),
         };
     }

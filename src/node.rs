@@ -1,6 +1,7 @@
 //! nodes: a graph based data organization
 //!
 //!
+use std::collections::HashSet;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -13,6 +14,7 @@ pub enum NodeError {
 #[derive(Debug, Clone)]
 pub enum Content {
     String(String),
+    Path(String),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -34,7 +36,7 @@ impl From<usize> for NodeId {
 pub struct Node {
     pub id: NodeId,
     pub edges: Vec<NodeId>,
-    pub tags: Vec<String>,
+    pub tags: HashSet<String>,
     pub content: Option<Content>,
 }
 
@@ -43,7 +45,7 @@ impl Node {
         Node {
             id: NodeId(id),
             edges: Vec::new(),
-            tags: Vec::new(),
+            tags: HashSet::new(),
             content,
         }
     }
@@ -56,7 +58,7 @@ impl Default for Node {
         Self {
             id: NodeId(0),
             edges: Vec::new(),
-            tags: Vec::new(),
+            tags: HashSet::new(),
             content: None,
         }
     }
