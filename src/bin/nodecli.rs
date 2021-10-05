@@ -9,14 +9,14 @@ fn main() -> Result<(), Error> {
     let mut id = root_id.into();
 
     id += 1;
-    let s = Node::new(id, Content::String("aaa".to_string()));
+    let s = Node::new(id, vec![], Content::String("aaa".to_string()));
     repo.put(&s)?;
 
     id += 1;
-    let e = Node::new(id, Content::Edges(vec![s.id]));
+    let e = Node::new(id, vec![], Content::Edges(vec![s.id]));
     repo.put(&e)?;
 
-    let root = Node::new(root_id.into(), Content::Edges(vec![e.id]));
+    let root = Node::new(root_id.into(), vec![], Content::Edges(vec![e.id]));
     repo.put(&root)?;
 
     Ok(())

@@ -41,10 +41,14 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(id: usize, content: Content) -> Self {
+    pub fn new(id: usize, tags: Vec<&str>, content: Content) -> Self {
+        let mut t = HashSet::new();
+        for tag in tags {
+            t.insert(tag.to_string());
+        }
         Node {
             id: NodeId(id),
-            tags: HashSet::new(),
+            tags: t,
             content,
         }
     }
