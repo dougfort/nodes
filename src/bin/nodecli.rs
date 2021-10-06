@@ -1,23 +1,36 @@
 use anyhow::Error;
-use nodes::node::{Content, Node};
-use nodes::repo::{HashMapRepo, NodeRepo};
+use nodes::node::{Content, Node, NodeId};
+use nodes::repo::{create_accept_all_filter, HashMapRepo, NodeRepo};
 
 fn main() -> Result<(), Error> {
     let mut repo = HashMapRepo::new();
 
-    let root_id = repo.root();
-    let mut id = root_id.into();
+    for (id, s, tags, e) in vec![
+        (1, "aaa", vec!["tag1"], vec![]),
+        (2, "bbb", vec!["tag2"], vec![]),
+        (3, "", vec![], vec![1, 2]),
+        (0, "", vec![], vec![3]),
+    ] {
+        let mut edges: Vec<NodeId> = Vec::new();
+        for e_id in e {
+            edges.push(e_id.into())
+        }
+        let content = if s.is_empty() {
+            Content::Edges(edges)
+        } else {
+            Content::String(s.to_string())
+        };
+        let n = Node::new(id, tags, content);
+        repo.put(&n)?;
+    }
 
-    id += 1;
-    let s = Node::new(id, vec![], Content::String("aaa".to_string()));
-    repo.put(&s)?;
+    repo.bfs_dump()?;
 
-    id += 1;
-    let e = Node::new(id, vec![], Content::Edges(vec![s.id]));
-    repo.put(&e)?;
+    let res = repo.traverse(create_accept_all_filter())?;
 
-    let root = Node::new(root_id.into(), vec![], Content::Edges(vec![e.id]));
-    repo.put(&root)?;
+    for r in res {
+        println!("{:?}", r);
+    }
 
     Ok(())
 }

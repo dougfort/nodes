@@ -53,6 +53,25 @@ pub trait NodeRepo {
 
         Ok(content)
     }
+
+    /// bfs_dump walks through the repo, breadth first and dumps the content
+    fn bfs_dump(&self) -> Result<(), NodeRepoError> {
+        let mut stack = vec![self.root()];
+
+        while !stack.is_empty() {
+            let id = stack.pop().unwrap();
+            if let Some(n) = self.get(&id)? {
+                println!("{:?}", n);
+                if let node::Content::Edges(e) = n.content {
+                    stack.extend_from_slice(&e)
+                };
+            } else {
+                return Err(NodeRepoError::UnknownNodeId(id));
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// create_match_tag_filter returns a closure for use as a filter in traverse
@@ -170,18 +189,22 @@ mod tests {
         let test_slice1 = "aaa";
         let test_string1 = test_slice1.to_string();
         let test_tag_slice1 = "tag1";
-        let test_tag1 = test_tag_slice1.to_string();
-        let mut s1 = node::Node::new(id, vec![test_tag_slice1], node::Content::String(test_string1));
-        s1.tags.insert(test_tag1);
+        let s1 = node::Node::new(
+            id,
+            vec![test_tag_slice1],
+            node::Content::String(test_string1),
+        );
         repo.put(&s1).unwrap();
 
         id += 1;
         let test_slice2 = "bbb";
         let test_string2 = test_slice2.to_string();
         let test_tag_slice2 = "tag2";
-        let test_tag2 = test_tag_slice2.to_string();
-        let mut s2 = node::Node::new(id, vec![test_tag_slice2], node::Content::String(test_string2));
-        s2.tags.insert(test_tag2);
+        let s2 = node::Node::new(
+            id,
+            vec![test_tag_slice2],
+            node::Content::String(test_string2),
+        );
         repo.put(&s2).unwrap();
 
         id += 1;
