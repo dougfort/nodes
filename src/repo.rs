@@ -133,7 +133,10 @@ impl NodeRepo for HashMapRepo {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+use super::*;
+use crate::node::Node;
+use crate::node::Content;
+use crate::node::NodeId;
 
     #[test]
     fn hash_map_repo_puts_and_gets() {
@@ -153,27 +156,29 @@ mod tests {
     fn hash_map_repo_can_traverse() {
         let mut repo = HashMapRepo::new();
 
-        let root_id = repo.root();
-        let mut id = root_id.into();
-
-        id += 1;
-        let test_slice = "aaa";
-        let test_string = test_slice.to_string();
-        let s = node::Node::new(id, vec![], node::Content::String(test_string));
-        repo.put(&s).unwrap();
-
-        id += 1;
-        let e = node::Node::new(id, vec![], node::Content::Edges(vec![s.id]));
-        repo.put(&e).unwrap();
-
-        let root = node::Node::new(root_id.into(), vec![], node::Content::Edges(vec![e.id]));
-        repo.put(&root).unwrap();
+        for (id, s, tags, e) in vec![
+            (1, "aaa", vec!["tag1"], vec![]),
+            (2, "", vec![], vec![1]),
+            (0, "", vec![], vec![2]),
+        ] {
+            let mut edges: Vec<NodeId> = Vec::new();
+            for e_id in e {
+                edges.push(e_id.into())
+            }
+            let content = if s.is_empty() {
+                Content::Edges(edges)
+            } else {
+                Content::String(s.to_string())
+            };
+            let n = Node::new(id, tags, content);
+            repo.put(&n).unwrap();
+        }
 
         let res = repo.traverse(create_accept_all_filter()).unwrap();
         assert_eq!(res.len(), 1);
 
         match &res[0] {
-            node::Content::String(res_string) => assert_eq!(res_string, test_slice),
+            node::Content::String(res_string) => assert_eq!(res_string, "aaa"),
             _ => panic!("invalid content"),
         };
     }
@@ -182,45 +187,32 @@ mod tests {
     fn hash_map_repo_can_find_a_tag() {
         let mut repo = HashMapRepo::new();
 
-        let root_id = repo.root();
-        let mut id = root_id.into();
-
-        id += 1;
-        let test_slice1 = "aaa";
-        let test_string1 = test_slice1.to_string();
-        let test_tag_slice1 = "tag1";
-        let s1 = node::Node::new(
-            id,
-            vec![test_tag_slice1],
-            node::Content::String(test_string1),
-        );
-        repo.put(&s1).unwrap();
-
-        id += 1;
-        let test_slice2 = "bbb";
-        let test_string2 = test_slice2.to_string();
-        let test_tag_slice2 = "tag2";
-        let s2 = node::Node::new(
-            id,
-            vec![test_tag_slice2],
-            node::Content::String(test_string2),
-        );
-        repo.put(&s2).unwrap();
-
-        id += 1;
-        let e = node::Node::new(id, vec![], node::Content::Edges(vec![s1.id, s2.id]));
-        repo.put(&e).unwrap();
-
-        let root = node::Node::new(root_id.into(), vec![], node::Content::Edges(vec![e.id]));
-        repo.put(&root).unwrap();
+        for (id, s, tags, e) in vec![
+            (1, "aaa", vec!["tag1"], vec![]),
+            (2, "bbb", vec!["tag2"], vec![]),
+            (3, "", vec![], vec![1, 2]),
+            (0, "", vec![], vec![3]),
+        ] {
+            let mut edges: Vec<NodeId> = Vec::new();
+            for e_id in e {
+                edges.push(e_id.into())
+            }
+            let content = if s.is_empty() {
+                Content::Edges(edges)
+            } else {
+                Content::String(s.to_string())
+            };
+            let n = Node::new(id, tags, content);
+            repo.put(&n).unwrap();
+        }
 
         let res = repo
-            .traverse(create_match_tag_filter(test_tag_slice2))
+            .traverse(create_match_tag_filter("tag2"))
             .unwrap();
         assert_eq!(res.len(), 1);
 
         match &res[0] {
-            node::Content::String(res_string) => assert_eq!(res_string, test_slice2),
+            node::Content::String(res_string) => assert_eq!(res_string, "bbb"),
             _ => panic!("invalid content"),
         };
     }
