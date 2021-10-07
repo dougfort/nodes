@@ -34,20 +34,25 @@ pub trait NodeRepo {
         let mut content: Vec<node::Content> = Vec::new();
 
         let mut stack = vec![self.root()];
+        let mut visited: HashSet<usize> = HashSet::new();
 
         while !stack.is_empty() {
             let id = stack.pop().unwrap();
+
             if let Some(n) = self.get(&id)? {
-                match n.content {
-                    node::Content::Edges(e) => stack.extend_from_slice(&e),
-                    _ => {
-                        if filter(n.tags) {
-                            content.push(n.content);
+                if !visited.contains(&id.into()) {
+                    visited.insert(id.into());
+                    match n.content {
+                        node::Content::Edges(e) => stack.extend_from_slice(&e),
+                        _ => {
+                            if filter(n.tags) {
+                                content.push(n.content);
+                            }
                         }
                     }
+                } else {
+                    return Err(NodeRepoError::UnknownNodeId(id));
                 }
-            } else {
-                return Err(NodeRepoError::UnknownNodeId(id));
             }
         }
 
@@ -57,14 +62,18 @@ pub trait NodeRepo {
     /// bfs_dump walks through the repo, breadth first and dumps the content
     fn bfs_dump(&self) -> Result<(), NodeRepoError> {
         let mut stack = vec![self.root()];
+        let mut visited: HashSet<usize> = HashSet::new();
 
         while !stack.is_empty() {
             let id = stack.pop().unwrap();
             if let Some(n) = self.get(&id)? {
-                println!("{:?}", n);
-                if let node::Content::Edges(e) = n.content {
-                    stack.extend_from_slice(&e)
-                };
+                if !visited.contains(&id.into()) {
+                    visited.insert(id.into());
+                    println!("{:?}", n);
+                    if let node::Content::Edges(e) = n.content {
+                        stack.extend_from_slice(&e)
+                    };
+                }
             } else {
                 return Err(NodeRepoError::UnknownNodeId(id));
             }
@@ -133,10 +142,10 @@ impl NodeRepo for HashMapRepo {
 
 #[cfg(test)]
 mod tests {
-use super::*;
-use crate::node::Node;
-use crate::node::Content;
-use crate::node::NodeId;
+    use super::*;
+    use crate::node::Content;
+    use crate::node::Node;
+    use crate::node::NodeId;
 
     #[test]
     fn hash_map_repo_puts_and_gets() {
@@ -206,9 +215,40 @@ use crate::node::NodeId;
             repo.put(&n).unwrap();
         }
 
-        let res = repo
-            .traverse(create_match_tag_filter("tag2"))
-            .unwrap();
+        let res = repo.traverse(create_match_tag_filter("tag2")).unwrap();
+        assert_eq!(res.len(), 1);
+
+        match &res[0] {
+            node::Content::String(res_string) => assert_eq!(res_string, "bbb"),
+            _ => panic!("invalid content"),
+        };
+    }
+
+    #[test]
+    fn hash_map_repo_can_handles_a_loop() {
+        let mut repo = HashMapRepo::new();
+
+        for (id, s, tags, e) in vec![
+            (1, "aaa", vec!["tag1"], vec![]),
+            (2, "bbb", vec!["tag2"], vec![]),
+            (3, "", vec![], vec![1, 2]),
+            (0, "", vec![], vec![3]),
+        ] {
+            let mut edges: Vec<NodeId> = Vec::new();
+            for e_id in e {
+                edges.push(e_id.into())
+            }
+            let content = if s.is_empty() {
+                Content::Edges(edges)
+            } else {
+                Content::String(s.to_string())
+            };
+            let n = Node::new(id, tags, content);
+            repo.put(&n).unwrap();
+        }
+        repo.get(&3.into()).unwrap();
+
+        let res = repo.traverse(create_match_tag_filter("tag2")).unwrap();
         assert_eq!(res.len(), 1);
 
         match &res[0] {
