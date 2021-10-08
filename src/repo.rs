@@ -38,10 +38,10 @@ pub trait NodeRepo {
 
         while !stack.is_empty() {
             let id = stack.pop().unwrap();
+            if !visited.contains(&id.into()) {
+                visited.insert(id.into());
 
-            if let Some(n) = self.get(&id)? {
-                if !visited.contains(&id.into()) {
-                    visited.insert(id.into());
+                if let Some(n) = self.get(&id)? {
                     match n.content {
                         node::Content::Edges(e) => stack.extend_from_slice(&e),
                         _ => {
@@ -66,9 +66,9 @@ pub trait NodeRepo {
 
         while !stack.is_empty() {
             let id = stack.pop().unwrap();
-            if let Some(n) = self.get(&id)? {
-                if !visited.contains(&id.into()) {
-                    visited.insert(id.into());
+            if !visited.contains(&id.into()) {
+                visited.insert(id.into());
+                if let Some(n) = self.get(&id)? {
                     println!("{:?}", n);
                     if let node::Content::Edges(e) = n.content {
                         stack.extend_from_slice(&e)
@@ -98,7 +98,7 @@ pub fn create_accept_all_filter() -> impl Fn(HashSet<String>) -> bool {
 
 pub struct HashMapRepo {
     root: node::NodeId,
-    pub repo: HashMap<usize, node::Node>,
+    repo: HashMap<usize, node::Node>,
 }
 
 impl HashMapRepo {
