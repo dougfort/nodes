@@ -42,12 +42,10 @@ pub trait NodeRepo {
                 visited.insert(id.into());
 
                 if let Some(n) = self.get(&id)? {
-                    match n.content {
-                        node::Content::Edges(e) => stack.extend_from_slice(&e),
-                        _ => {
-                            if filter(n.tags) {
-                                content.push(n.content);
-                            }
+                    stack.extend_from_slice(&n.edges);
+                    if let Some(c) = n.content {
+                        if filter(n.tags) {
+                            content.push(c);
                         }
                     }
                 } else {
@@ -70,9 +68,7 @@ pub trait NodeRepo {
                 visited.insert(id.into());
                 if let Some(n) = self.get(&id)? {
                     println!("{:?}", n);
-                    if let node::Content::Edges(e) = n.content {
-                        stack.extend_from_slice(&e)
-                    };
+                    stack.extend_from_slice(&n.edges)
                 }
             } else {
                 return Err(NodeRepoError::UnknownNodeId(id));
@@ -154,7 +150,7 @@ mod tests {
         let root_id = repo.root();
         let id = root_id.into();
 
-        let root = node::Node::new(id, vec![], node::Content::Edges(vec![]));
+        let root = node::Node::new(id, vec![], vec![], None);
         repo.put(&root).unwrap();
 
         let x = repo.get(&root_id).unwrap();
@@ -175,11 +171,11 @@ mod tests {
                 edges.push(e_id.into())
             }
             let content = if s.is_empty() {
-                Content::Edges(edges)
+                None
             } else {
-                Content::String(s.to_string())
+                Some(Content::String(s.to_string()))
             };
-            let n = Node::new(id, tags, content);
+            let n = Node::new(id, edges, tags, content);
             repo.put(&n).unwrap();
         }
 
@@ -207,11 +203,11 @@ mod tests {
                 edges.push(e_id.into())
             }
             let content = if s.is_empty() {
-                Content::Edges(edges)
+                None
             } else {
-                Content::String(s.to_string())
+                Some(Content::String(s.to_string()))
             };
-            let n = Node::new(id, tags, content);
+            let n = Node::new(id, edges, tags, content);
             repo.put(&n).unwrap();
         }
 
@@ -239,11 +235,11 @@ mod tests {
                 edges.push(e_id.into())
             }
             let content = if s.is_empty() {
-                Content::Edges(edges)
+                None
             } else {
-                Content::String(s.to_string())
+                Some(Content::String(s.to_string()))
             };
-            let n = Node::new(id, tags, content);
+            let n = Node::new(id, edges, tags, content);
             repo.put(&n).unwrap();
         }
         repo.get(&3.into()).unwrap();

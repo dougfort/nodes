@@ -16,11 +16,11 @@ fn main() -> Result<(), Error> {
             edges.push(e_id.into())
         }
         let content = if s.is_empty() {
-            Content::Edges(edges)
+            None
         } else {
-            Content::String(s.to_string())
+            Some(Content::String(s.to_string()))
         };
-        let n = Node::new(id, tags, content);
+        let n = Node::new(id, edges, tags, content);
         repo.put(&n)?;
     }
 
